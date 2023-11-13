@@ -3,28 +3,60 @@ import System.Random ( mkStdGen, Random(randomRs) )
 import System.Random.Shuffle ( shuffle' )
 import Data.List (delete)
 
+
+type Range t = (t, t)
+type Mass = Float
+type Radius = Float
+type Volume = Float
+type Density = Float
+type Force = (Float, Float)
+type Direction = (Float, Float)
+type Atom = (Point, Direction, Mass, Radius, Density, Color)
+type Universe = [Atom]
+
+type Star = Atom
+type Planet = Atom
+type Comet = Atom
+
+
+-- width of the display in pixels
 mapWidth :: Int
 mapWidth = 800
 
+-- height of the display in pixels
 mapHeight :: Int
 mapHeight = 600
 
+-- simulation steps per second
 stepsPerSec :: Int
 stepsPerSec = 30
 
-type Range t = (t, t)
+-- max move per iteration of an Atom
+maxMove :: Float
+maxMove = 5.0
 
+-- max merge atom move per iteration
+maxMergeMove :: Float
+maxMergeMove = 1.5
+
+-- size of the universe
+-- dramatically influences performance!
+sizeUni :: Int
+sizeUni = 50
+
+
+-- random generation ranges
 xPosRange :: Range Float
-xPosRange = (-300, 300)
+xPosRange = (-350, 350)
 
 yPosRange :: Range Float
-yPosRange = (-200, 200)
+yPosRange = (-250, 250)
 
 xVRange :: Range Float
 xVRange = (-2, 2)
 
 yVRange :: Range Float
-yVRange = (-1, 1)
+yVRange = (-1.5, 1.5)
 
 massRange :: Range Mass
 massRange = (100, 4000)
@@ -35,9 +67,8 @@ massRange = (100, 4000)
 densityRange :: Range Density
 densityRange = (100, 300)
 
-shuffleList :: [a] -> [a]
-shuffleList xs = shuffle' xs (length xs) (mkStdGen (length xs))
 
+-- random generators
 genXPos :: Int -> [Float]
 genXPos n = take n $ randomRs xPosRange (mkStdGen n)
 
@@ -59,20 +90,16 @@ genXYV n = zip (shuffleList $ genXV n) (genYV n)
 genMass :: Int -> [Mass]
 genMass n = take n $ randomRs massRange (mkStdGen n)
 
--- genRadius :: Int -> [Float]
+-- genRadius :: Int -> [Radius]
 -- genRadius n = take n $ randomRs radiusRange (mkStdGen n)
 
 genDensity :: Int -> [Density]
 genDensity n = take n $ randomRs densityRange (mkStdGen n)
 
-type Mass = Float
-type Radius = Float
-type Volume = Float
-type Density = Float
-type Force = (Float, Float)
-type Direction = (Float, Float)
-type Atom = (Point, Direction, Mass, Radius, Density, Color)
-type Universe = [Atom]
+
+-- utility functions
+shuffleList :: [a] -> [a]
+shuffleList xs = shuffle' xs (length xs) (mkStdGen (length xs))
 
 sphereVol :: Radius -> Volume
 sphereVol r = ((4/3) * pi * r) ** 3
@@ -80,11 +107,13 @@ sphereVol r = ((4/3) * pi * r) ** 3
 sphereRad :: Volume -> Radius
 sphereRad v = ((3/4) * v / pi) ** (1/3)
 
+
+-- simulation
 mapSetting :: Display
 mapSetting = InWindow "Window" (mapWidth, mapHeight) (0, 0)
 
 universe :: Universe
-universe = randomUniverse 100
+universe = randomUniverse sizeUni
 
 -- TODO: colour change 
 randomUniverse :: Int -> Universe
@@ -105,7 +134,9 @@ drawUniverse model
 
 updateUniverse :: p -> Float -> Universe -> Universe
 updateUniverse vp dt model = 
-  [updateAtom atom dt model | atom <- checkCollsion $ deleteEscape model]
+  [ updateAtom atom dt model 
+  | atom <- checkCollsion $ deleteEscape 
+    (model ++ randomUniverse (sizeUni - length model))]
 
 updateAtom :: Atom -> Float -> Universe -> Atom
 updateAtom ((pX, pY), (vX, vY), m, r, d, c) dt model
@@ -123,7 +154,6 @@ updateAtom ((pX, pY), (vX, vY), m, r, d, c) dt model
       fX = sum $ map fst forces
       fY = sum $ map snd forces
       forces = forceOnAtom (pX, pY) m model
-      maxMove = 3.5
 
 forceOnAtom :: Point -> Mass -> Universe -> [Force]
 forceOnAtom p1 m1 model 
@@ -158,9 +188,8 @@ mergeTwoAtoms
       (nX, nY, nC, nD)
         | r1 >= r2 = (pX1, pY1, c1, d1)
         | otherwise = (pX2, pY2, c2, d2)
-      -- nVx = vX1 * m1 + vX2 * m2 / nM
-      -- nVy = vY1 * m1 + vY2 * m2 / nM
-      (nVx, nVy) = (0, 0)
+      nVx = max (-maxMergeMove) (min maxMergeMove ((vX1 * m1 + vX2 * m2) / nM))
+      nVy = max (-maxMergeMove) (min maxMergeMove ((vY1 * m1 + vY2 * m2) / nM))
       nM = m1 + m2
       nR = sphereRad (nM / nD)
 
@@ -185,7 +214,7 @@ collides :: Atom -> Universe -> [Atom]
 collides ((pX1, pY1), (vX1, vY1), m1, r1, d1, c1) model =
   [ ((pX2, pY2), (vX2, vY2), m2, r2, d2, c2)
   | ((pX2, pY2), (vX2, vY2), m2, r2, d2, c2) <- model,
-  abs (pX1 - pX2) ** 2 + abs (pY1 - pY2) ** 2 <= (r1 + r2) ** 2]
+  (pX1 - pX2) ** 2 + (pY1 - pY2) ** 2 <= (r1 + r2) ** 2]
 
 traceAtom :: Atom -> Picture
 traceAtom = undefined
