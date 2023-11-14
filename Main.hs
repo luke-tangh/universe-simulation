@@ -42,7 +42,7 @@ maxMergeMove = 1.5
 -- size of the universe
 -- dramatically influences performance!
 sizeUni :: Int
-sizeUni = 50
+sizeUni = 200
 
 
 -- random generation ranges

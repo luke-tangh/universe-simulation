@@ -16,3 +16,7 @@ Generate output:
 ```
 ghc -O2 -threaded -dynamic Main.hs
 ```
+Run:
+```
+./Main
+```
