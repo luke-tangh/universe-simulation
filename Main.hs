@@ -21,11 +21,11 @@ type Comet = Atom
 
 -- width of the display in pixels
 mapWidth :: Int
-mapWidth = 800
+mapWidth = 1280
 
 -- height of the display in pixels
 mapHeight :: Int
-mapHeight = 600
+mapHeight = 720
 
 -- simulation steps per second
 stepsPerSec :: Int
@@ -37,20 +37,20 @@ maxMove = 5.0
 
 -- max merge atom move per iteration
 maxMergeMove :: Float
-maxMergeMove = 1.5
+maxMergeMove = 2.5
 
 -- size of the universe
 -- dramatically influences performance!
 sizeUni :: Int
-sizeUni = 200
+sizeUni = 300
 
 
 -- random generation ranges
 xPosRange :: Range Float
-xPosRange = (-350, 350)
+xPosRange = (-600, 600)
 
 yPosRange :: Range Float
-yPosRange = (-250, 250)
+yPosRange = (-320, 320)
 
 xVRange :: Range Float
 xVRange = (-2, 2)
@@ -59,7 +59,7 @@ yVRange :: Range Float
 yVRange = (-1.5, 1.5)
 
 massRange :: Range Mass
-massRange = (100, 4000)
+massRange = (400, 4000)
 
 -- radiusRange :: Range Radius
 -- radiusRange = (1, 3)
@@ -115,7 +115,6 @@ mapSetting = InWindow "Window" (mapWidth, mapHeight) (0, 0)
 universe :: Universe
 universe = randomUniverse sizeUni
 
--- TODO: colour change 
 randomUniverse :: Int -> Universe
 randomUniverse atoms =
   consUniverse atoms (genXYPos atoms) (genXYV atoms) (genMass atoms) (genDensity atoms)
@@ -123,13 +122,16 @@ randomUniverse atoms =
 consUniverse :: Int -> [Point] -> [Direction] -> [Mass] -> [Density] -> Universe
 consUniverse 0 _ _ _ _ = []
 consUniverse n (p:ps) (v:vs) (m:ms) (d:ds) =
-  (p, v, m, r, d, white) : consUniverse (n-1) ps vs ms ds
-    where r = sphereRad (m / d)
+  (p, v, m, r, d, c) : consUniverse (n-1) ps vs ms ds
+    where 
+      r = sphereRad (m / d)
+      c = makeColor 0.5 0.5 (1 - d') 1
+      d' = (d - fst densityRange) / (snd densityRange - fst densityRange)
 
 drawUniverse :: Universe -> Picture
 drawUniverse model
   = Pictures
-  [ translate pX pY $ color white $ circleSolid radius
+  [ translate pX pY $ color c $ circleSolid radius
   | ((pX, pY), _, _, radius, _, c) <- model ]
 
 updateUniverse :: p -> Float -> Universe -> Universe
@@ -172,8 +174,14 @@ forceTwoAtoms (pX1, pY1) m1 (pX2, pY2) m2
       a = atan (abs (pY2 - pY1) / abs (pX2 - pX1))
       distSquare = (pX2 - pX1) ** 2 + (pY2 - pY1) ** 2
 
+{-
 updateColor :: Atom -> Atom
-updateColor = undefined
+updateColor (p, (vX, vY), m, r, d, c) 
+  = (p, (vX, vY), m, r, d, nC)
+    where
+      nC = makeColor 0.5 0.5 v 1
+      v = (abs vX + abs vY) / (2 * maxMove)
+-}
 
 mergeAtoms :: [Atom] -> Atom
 mergeAtoms [a] = a
@@ -215,9 +223,6 @@ collides ((pX1, pY1), (vX1, vY1), m1, r1, d1, c1) model =
   [ ((pX2, pY2), (vX2, vY2), m2, r2, d2, c2)
   | ((pX2, pY2), (vX2, vY2), m2, r2, d2, c2) <- model,
   (pX1 - pX2) ** 2 + (pY1 - pY2) ** 2 <= (r1 + r2) ** 2]
-
-traceAtom :: Atom -> Picture
-traceAtom = undefined
 
 main :: IO ()
 main = simulate mapSetting black stepsPerSec universe drawUniverse updateUniverse
