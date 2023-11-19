@@ -24,11 +24,8 @@ cabal install --lib gloss random random-shuffle
 ```
 Generate output:
 ```
-ghc -O2 -threaded -dynamic ./app/Main.hs
-```
-Run:
-```
-./app/Main
+ghc -O2 -threaded -dynamic Main.hs
+./Main
 ```
 
 ## Appreciation

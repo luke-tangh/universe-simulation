@@ -1,4 +1,4 @@
 dist-newstyle
-app/Main
-app/Main.hi
-app/Main.o
+Main
+Main.hi
+Main.o
