@@ -1,3 +1,4 @@
-Main
-Main.hi
-Main.o
+dist-newstyle
+app/Main
+app/Main.hi
+app/Main.o

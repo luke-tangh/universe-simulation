@@ -1,6 +1,6 @@
-# universe
+# universe-simulation
 
-[Universe simulation](https://github.com/luke-tangh/universe) in Haskell.
+[Universe simulation](https://github.com/luke-tangh/universe-simulation) in Haskell.
 
 ![Alt Text](example.gif)
 
@@ -9,6 +9,14 @@
 - `gloss 1.13.2.2`
 
 ## Run
+
+### Cabal
+```
+cabal build
+```
+
+### GHC
+
 Install dependencies:
 ```
 sudo apt-get install freeglut3 freeglut3-dev libgmp3-dev
@@ -16,11 +24,11 @@ cabal install --lib gloss random random-shuffle
 ```
 Generate output:
 ```
-ghc -O2 -threaded -dynamic Main.hs
+ghc -O2 -threaded -dynamic ./app/Main.hs
 ```
 Run:
 ```
-./Main
+./app/Main
 ```
 
 ## Appreciation

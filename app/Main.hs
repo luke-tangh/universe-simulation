@@ -1,3 +1,5 @@
+module Main where
+
 import Graphics.Gloss
 import System.Random ( mkStdGen, Random(randomRs) )
 import System.Random.Shuffle ( shuffle' )
