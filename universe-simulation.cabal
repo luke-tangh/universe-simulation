@@ -21,7 +21,7 @@ executable universe-simulation
     main-is:          Main.hs
 
     build-depends:
-        base ^>=4.17.2.0,
+        base,
         gloss,
         random,
         random-shuffle
