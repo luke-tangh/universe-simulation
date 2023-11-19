@@ -1,7 +1,7 @@
 import Graphics.Gloss
 import System.Random ( mkStdGen, Random(randomRs) )
 import System.Random.Shuffle ( shuffle' )
-import Data.List (delete)
+import Data.List ( delete )
 
 
 type Range t = (t, t)
@@ -13,10 +13,6 @@ type Force = (Float, Float)
 type Direction = (Float, Float)
 type Atom = (Point, Direction, Mass, Radius, Density, Color)
 type Universe = [Atom]
-
-type Star = Atom
-type Planet = Atom
-type Comet = Atom
 
 
 -- width of the display in pixels
@@ -31,18 +27,26 @@ mapHeight = 720
 stepsPerSec :: Int
 stepsPerSec = 30
 
+-- decrease the movement shown by factor
+resizeFactor :: Float
+resizeFactor = 1.02
+
 -- max move per iteration of an Atom
 maxMove :: Float
-maxMove = 5.0
+maxMove = 5 * resizeFactor
 
 -- max merge atom move per iteration
 maxMergeMove :: Float
-maxMergeMove = 2.5
+maxMergeMove = 1.0 * resizeFactor
 
 -- size of the universe
 -- dramatically influences performance!
 sizeUni :: Int
-sizeUni = 300
+sizeUni = 250
+
+-- regenerate atoms to sizeUni
+regenAtoms :: Bool
+regenAtoms = True
 
 
 -- random generation ranges
@@ -59,7 +63,7 @@ yVRange :: Range Float
 yVRange = (-1.5, 1.5)
 
 massRange :: Range Mass
-massRange = (400, 4000)
+massRange = (600, 6000)
 
 -- radiusRange :: Range Radius
 -- radiusRange = (1, 3)
@@ -119,13 +123,17 @@ randomUniverse :: Int -> Universe
 randomUniverse atoms =
   consUniverse atoms (genXYPos atoms) (genXYV atoms) (genMass atoms) (genDensity atoms)
 
+randomStaticUniverse :: Int -> Universe
+randomStaticUniverse atoms =
+  consUniverse atoms (genXYPos atoms) (replicate atoms (0, 0)) (genMass atoms) (genDensity atoms)
+
 consUniverse :: Int -> [Point] -> [Direction] -> [Mass] -> [Density] -> Universe
 consUniverse 0 _ _ _ _ = []
 consUniverse n (p:ps) (v:vs) (m:ms) (d:ds) =
   (p, v, m, r, d, c) : consUniverse (n-1) ps vs ms ds
     where 
       r = sphereRad (m / d)
-      c = makeColor 0.5 0.5 (1 - d') 1
+      c = makeColor 0.4 0.4 (1 - d') 1
       d' = (d - fst densityRange) / (snd densityRange - fst densityRange)
 
 drawUniverse :: Universe -> Picture
@@ -138,7 +146,11 @@ updateUniverse :: p -> Float -> Universe -> Universe
 updateUniverse vp dt model = 
   [ updateAtom atom dt model 
   | atom <- checkCollsion $ deleteEscape 
-    (model ++ randomUniverse (sizeUni - length model))]
+    (model ++ regen)]
+    where
+      regen
+        | regenAtoms = randomStaticUniverse (sizeUni - length model)
+        | otherwise = []
 
 updateAtom :: Atom -> Float -> Universe -> Atom
 updateAtom ((pX, pY), (vX, vY), m, r, d, c) dt model
@@ -148,8 +160,10 @@ updateAtom ((pX, pY), (vX, vY), m, r, d, c) dt model
       -- nY = max (-300) (min 300 (pY + nVy))
       nX = pX + nVx
       nY = pY + nVy
-      nVx = max (-maxMove) (min maxMove (vX + aX * dt))
-      nVy = max (-maxMove) (min maxMove (vY + aY * dt))
+      xMove = (vX + aX * dt) / resizeFactor
+      yMove = (vY + aY * dt) / resizeFactor
+      nVx = max (-maxMove) (min maxMove xMove)
+      nVy = max (-maxMove) (min maxMove yMove)
       -- nVx = vX + aX * dt
       -- nVy = vY + aY * dt
       (aX, aY) = (fX / m, fY / m)
@@ -174,15 +188,6 @@ forceTwoAtoms (pX1, pY1) m1 (pX2, pY2) m2
       a = atan (abs (pY2 - pY1) / abs (pX2 - pX1))
       distSquare = (pX2 - pX1) ** 2 + (pY2 - pY1) ** 2
 
-{-
-updateColor :: Atom -> Atom
-updateColor (p, (vX, vY), m, r, d, c) 
-  = (p, (vX, vY), m, r, d, nC)
-    where
-      nC = makeColor 0.5 0.5 v 1
-      v = (abs vX + abs vY) / (2 * maxMove)
--}
-
 mergeAtoms :: [Atom] -> Atom
 mergeAtoms [a] = a
 mergeAtoms (a:b:abs) = mergeAtoms (mergeTwoAtoms a b : abs)
@@ -193,11 +198,13 @@ mergeTwoAtoms
   ((pX2, pY2), (vX2, vY2), m2, r2, d2, c2)
   = ((nX, nY), (nVx, nVy), nM, nR, nD, nC)
     where
-      (nX, nY, nC, nD)
-        | r1 >= r2 = (pX1, pY1, c1, d1)
-        | otherwise = (pX2, pY2, c2, d2)
-      nVx = max (-maxMergeMove) (min maxMergeMove ((vX1 * m1 + vX2 * m2) / nM))
-      nVy = max (-maxMergeMove) (min maxMergeMove ((vY1 * m1 + vY2 * m2) / nM))
+      (nX, nY, nD, nC)
+        | r1 >= r2 = (pX1, pY1, d1, c1)
+        | otherwise = (pX2, pY2, d2, c2)
+      xVel = ((vX1 * m1 + vX2 * m2) / nM) / resizeFactor
+      yVel = ((vY1 * m1 + vY2 * m2) / nM) / resizeFactor
+      nVx = max (-maxMergeMove) (min maxMergeMove xVel)
+      nVy = max (-maxMergeMove) (min maxMergeMove yVel)
       nM = m1 + m2
       nR = sphereRad (nM / nD)
 

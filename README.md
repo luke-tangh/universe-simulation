@@ -1,6 +1,8 @@
 # universe
 
-Universe simulation in Haskell.
+[Universe simulation](https://github.com/luke-tangh/universe) in Haskell.
+
+![Alt Text](example.gif)
 
 ## Environment
 - `Ubuntu 22.04.3`
@@ -20,3 +22,6 @@ Run:
 ```
 ./Main
 ```
+
+## Appreciation
+Inspired by [Haskell-gravity-simulation](https://github.com/Coayer/Haskell-gravity-simulation).
